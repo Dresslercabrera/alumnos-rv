@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------
+// Models for DRE-HCO Títulos App
+// -------------------------------
+
+model Usuario {
+  id         Int       @id @default(autoincrement())
+  nombre     String
+  correo     String     @unique
+  usuario    String     @unique
+  contrasena String
+  rol        Rol
+  estado     EstadoUsuario @default(ACTIVO)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  auditorias Auditoria[]
+  resolucionesCreadas Resolucion[] @relation("ResolucionCreador")
+}
+
+model Resolucion {
+  id               Int           @id @default(autoincrement())
+  nro_resolucion   String
+  fecha_resolucion DateTime
+  estado           EstadoResolucion @default(EN_PROCESO)
+  creadoPorId      Int
+  creadoPor        Usuario        @relation("ResolucionCreador", fields: [creadoPorId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  documentos       Documento[]
+  egresados        Egresado[]
+}
+
+model Documento {
+  id            Int       @id @default(autoincrement())
+  tipo          TipoDocumento
+  descripcion   String
+  archivoUrl    String
+  resolucionId  Int
+  resolucion    Resolucion @relation(fields: [resolucionId], references: [id])
+  createdAt     DateTime   @default(now())
+}
+
+model Egresado {
+  id                  Int        @id @default(autoincrement())
+  institucion         String
+  dre                 String     @default("DRE HUÁNUCO")
+  nro_serie           String?
+  fecha_registro_dre  DateTime?
+  tipo_doc            TipoDoc
+  nro_doc             String
+  nombres             String
+  apellido_paterno    String
+  apellido_materno    String
+  sexo                Sexo
+  carrera             String
+  programa            String?
+  nro_registro_inst   String?
+  fecha_emision       DateTime?
+  tipo_titulo         TipoTitulo
+  diploma_anverso_url String?
+  diploma_reverso_url String?
+  comentario          String?
+  resolucionId        Int
+  resolucion          Resolucion @relation(fields: [resolucionId], references: [id])
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+}
+
+model Auditoria {
+  id         Int       @id @default(autoincrement())
+  usuarioId  Int?
+  usuario    Usuario?  @relation(fields: [usuarioId], references: [id])
+  accion     AccionAuditoria
+  modulo     ModuloAuditoria
+  descripcion String
+  ip         String?
+  fechaHora  DateTime  @default(now())
+}
+
+// -------------------------------
+// Enums
+// -------------------------------
+
+enum Rol {
+  ADMIN_DRE
+  ESPECIALISTA_DRE
+  USUARIO_CONSULTA
+}
+
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+}
+
+enum EstadoResolucion {
+  EN_PROCESO
+  COMPLETADO
+  RECHAZADO
+  APROBADO
+}
+
+enum TipoDocumento {
+  RESOLUCION_REGISTRO
+  OFICIO
+  SUSTENTO
+}
+
+enum TipoDoc {
+  DNI
+  CE
+  PASAPORTE
+}
+
+enum TipoTitulo {
+  ORIGINAL
+  DUPLICADO
+}
+
+enum Sexo {
+  M
+  F
+}
+
+enum AccionAuditoria {
+  INSERTAR
+  ACTUALIZAR
+  ELIMINAR
+  VER
+  LOGIN
+  LOGOUT
+}
+
+enum ModuloAuditoria {
+  USUARIOS
+  RESOLUCIONES
+  DOCUMENTOS
+  EGRESADOS
+  REPORTES
+  AUTENTICACION
+}
